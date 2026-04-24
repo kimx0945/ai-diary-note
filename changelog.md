@@ -2,6 +2,12 @@
 
 이 파일은 'AI 감성 일기' 웹앱 프로젝트의 모든 변경 사항을 시간 순으로 기록합니다.
 
+## [2026-04-24 12:33 KST]
+### ✨ 새로 추가된 기능 (Added)
+- **Vercel Serverless Redis (Upstash) 연동**:
+  - 분석이 성공적으로 완료될 때마다 사용자의 일기와 AI의 답변을 Redis 데이터베이스에 영구 저장합니다.
+  - 키 형식: `diary-YYYYMMDDHHMMSS` (KST 기준 고유 ID).
+  - `@upstash/redis` SDK를 도입하여 서버리스 환경에 최적화된 REST 방식 통신을 구현했습니다.
 ## [2026-04-24 12:08 KST]
 ### 🔄 변경된 사항 (Changed)
 - **API 사용량(Quota) 제한 대응**: 구글 무료 등급 계정에서 `gemini-2.0-flash` 모델의 호출 한도가 0으로 설정되어 발생하는 에러(`Quota exceeded... limit: 0`)를 우회하기 위해, 무료 제공량이 확실한 `gemini-2.5-flash` 모델로 다시 롤백했습니다.

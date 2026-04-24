@@ -1,5 +1,7 @@
 # 프로젝트 아키텍처 및 구조 (Code Architecture)
 
+🔗 **GitHub Repository**: [https://github.com/kimx0945/ai-diary-note](https://github.com/kimx0945/ai-diary-note)
+
 이 파일은 'AI 감성 일기' 웹앱의 전체적인 파일 구조와 데이터 흐름을 명세합니다.
 프로젝트의 구조가 변경될 때마다 이 파일도 함께 업데이트됩니다.
 
@@ -39,9 +41,11 @@ DAY_5/
    - 서버에 안전하게 숨겨져 있는 환경 변수 `process.env.GEMINI_API_KEY`를 꺼내옵니다.
    - 심리상담사 프롬프트 템플릿에 사용자의 일기 내용을 결합하여 실제 **Google Gemini API**로 POST 요청을 보냅니다.
 
-4. **결과 반환 및 저장 (Backend -> Frontend)**
-   - Gemini API로부터 받은 답변을 백엔드가 정제하여 프론트엔드(`script.js`)로 다시 전달합니다.
-   - `script.js`는 전달받은 답변을 화면(`aiResponse`)에 표시하고, 동시에 브라우저의 `localStorage`에 일기 내용과 답변을 임시 저장하여 새로고침 시에도 유지되게 합니다.
+4. **결과 반환 및 저장 (Backend -> Frontend & Redis)**
+   - Gemini API로부터 받은 답변을 백엔드가 정제합니다.
+   - **(NEW) Redis 저장**: 백엔드는 응답을 프론트엔드로 보내기 직전, Vercel Serverless Redis에 `diary-YYYYMMDDHHMMSS` 키 형식으로 일기 내용과 AI 답변을 영구 저장합니다.
+   - 정제된 답변을 프론트엔드(`script.js`)로 전달합니다.
+   - `script.js`는 전달받은 답변을 화면(`aiResponse`)에 표시하고, 동시에 브라우저의 `localStorage`에도 임시 저장합니다.
 
 ---
 *마지막 업데이트: Vercel 서버리스 함수(`api/analyze.js`) 도입 및 프론트엔드/백엔드 분리 완료 시점*
