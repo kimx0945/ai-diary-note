@@ -17,6 +17,48 @@ document.addEventListener('DOMContentLoaded', () => {
         aiResponse.style.whiteSpace = 'pre-wrap';
     }
 
+    const historyList = document.getElementById('historyList');
+
+    // 히스토리 불러오기 및 렌더링
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history');
+            const data = await response.json();
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || '히스토리를 불러오지 못했습니다.');
+            }
+
+            const history = data.history;
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="empty-msg">저장된 일기가 없습니다.</p>';
+                return;
+            }
+
+            historyList.innerHTML = history.map(item => {
+                // ID에서 날짜 추출 (diary-YYYYMMDDHHMMSS)
+                const ts = item.id.replace('diary-', '');
+                const formattedDate = `${ts.slice(0, 4)}년 ${ts.slice(4, 6)}월 ${ts.slice(6, 8)}일 ${ts.slice(8, 10)}: ${ts.slice(10, 12)}`;
+
+                return `
+                    <div class="history-card">
+                        <div class="date">${formattedDate}</div>
+                        <div class="content">${item.diaryContent}</div>
+                        <div class="response">${item.aiResponse}</div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('History Fetch Error:', error);
+            historyList.innerHTML = `<p class="empty-msg" style="color: #fca5a5;">기록을 가져오는데 실패했습니다: ${error.message}</p>`;
+        }
+    }
+
+    // 초기 실행
+    loadHistory();
+
     // Analyze Button Click
     analyzeBtn.addEventListener('click', async () => {
         const content = diaryInput.value.trim();
@@ -32,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
         
         aiResponse.classList.add('pulse');
-        aiResponse.innerText = 'AI가 당신의 하루를 분석하고 있습니다...';
+        aiResponse.innerText = 'AI가 당신의 하루를 분석하고 기록하고 있습니다...';
 
         try {
             // 서버리스 백엔드 API 호출
@@ -62,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 로컬 스토리지에 저장
             localStorage.setItem('savedDiary', content);
             localStorage.setItem('savedAiResponse', aiText);
+
+            // Redis 저장 후 히스토리 즉시 갱신
+            setTimeout(loadHistory, 1500); // Vercel 서버리스/Redis 반영 시간을 고려한 약간의 지연
 
         } catch (error) {
             console.error('API Error:', error);

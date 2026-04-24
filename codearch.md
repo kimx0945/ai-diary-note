@@ -47,5 +47,10 @@ DAY_5/
    - 정제된 답변을 프론트엔드(`script.js`)로 전달합니다.
    - `script.js`는 전달받은 답변을 화면(`aiResponse`)에 표시하고, 동시에 브라우저의 `localStorage`에도 임시 저장합니다.
 
+5. **히스토리 조회 (Frontend: `script.js` <-> Backend: `api/history.js`)**
+   - 페이지가 로드되면 `script.js`가 `/api/history`를 호출합니다.
+   - 백엔드는 Redis에서 모든 `diary-*` 키를 찾아 데이터를 반환합니다.
+   - 프론트엔드는 이를 카드 형태로 렌더링하여 하단 히스토리 섹션에 표시합니다.
+
 ---
-*마지막 업데이트: Vercel 서버리스 함수(`api/analyze.js`) 도입 및 프론트엔드/백엔드 분리 완료 시점*
+*마지막 업데이트: 일기 히스토리 조회 기능(`api/history.js`) 및 UI 반영 완료*
