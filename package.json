@@ -11,6 +11,6 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "@upstash/redis": "^1.37.0"
+    "ioredis": "^5.10.1"
   }
 }

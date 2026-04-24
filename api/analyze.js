@@ -1,4 +1,7 @@
-import { Redis } from '@upstash/redis';
+import Redis from 'ioredis';
+
+// 서버리스 함수 외부에서 클라이언트를 선언하여 재사용 (Connection Pooling 지원)
+let redis = null;
 
 export default async function handler(req, res) {
   // CORS 처리
@@ -49,34 +52,34 @@ export default async function handler(req, res) {
 
     const aiText = data.candidates[0].content.parts[0].text;
 
-    // 2. Redis에 저장 (Vercel Marketplace Serverless Redis)
+    // 2. Redis에 저장
     try {
-      // Redis.fromEnv()는 UPSTASH_REDIS_REST_URL/TOKEN 혹은 KV_REST_API_URL/TOKEN을 자동으로 찾습니다.
-      // 사용자가 언급한 REDIS_URL이 있을 경우를 위해 수동 설정도 고려할 수 있습니다.
-      const redis = process.env.REDIS_URL 
-        ? new Redis({ url: process.env.REDIS_URL.replace('redis://', 'https://'), token: process.env.REDIS_TOKEN || '' })
-        : Redis.fromEnv();
+      if (!redis && process.env.REDIS_URL) {
+        redis = new Redis(process.env.REDIS_URL);
+      }
 
-      const now = new Date();
-      // KST(UTC+9) 기준으로 타임스탬프 생성 (YYYYMMDDHHMMSS)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const kstDate = new Date(now.getTime() + kstOffset);
-      
-      const timestamp = kstDate.toISOString()
-        .replace(/[-T:Z]/g, '')
-        .slice(0, 14);
-      
-      const key = `diary-${timestamp}`;
-      const diaryData = {
-        diaryContent,
-        aiResponse: aiText,
-        createdAt: now.toISOString()
-      };
+      if (redis) {
+        const now = new Date();
+        // KST(UTC+9) 기준으로 타임스탬프 생성
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const kstDate = new Date(now.getTime() + kstOffset);
+        
+        const timestamp = kstDate.toISOString()
+          .replace(/[-T:Z]/g, '')
+          .slice(0, 14);
+        
+        const key = `diary-${timestamp}`;
+        const diaryData = {
+          diaryContent,
+          aiResponse: aiText,
+          createdAt: now.toISOString()
+        };
 
-      await redis.set(key, JSON.stringify(diaryData));
-      console.log(`Successfully saved to Redis: ${key}`);
+        await redis.set(key, JSON.stringify(diaryData));
+        console.log(`Successfully saved to Redis: ${key}`);
+      }
     } catch (redisError) {
-      console.error('Redis 저장 실패 (분석 결과 반환은 계속됨):', redisError);
+      console.error('Redis 저장 실패:', redisError);
     }
 
     return res.status(200).json({ result: aiText });
