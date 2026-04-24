@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 감성 일기 - 오늘 하루는 어땠나요?</title>
+    <link rel="stylesheet" href="index.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>오늘 하루는 어땠나요?</h1>
+        
+        <div class="input-group">
+            <textarea id="diaryInput" placeholder="오늘의 감정과 생각들을 자유롭게 적어보세요..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button id="voiceBtn" class="btn-voice">
+                <i data-lucide="mic"></i>
+                음성으로 입력하기
+            </button>
+            <button id="analyzeBtn" class="btn-analyze">
+                <i data-lucide="sparkles"></i>
+                분석 요청하기
+            </button>
+        </div>
+
+        <div class="ai-section">
+            <h2>AI 답변</h2>
+            <div id="aiResponse" class="ai-response-box">
+                여기에 AI의 답변이 표시됩니다.
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
