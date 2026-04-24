@@ -57,6 +57,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('서버 에러:', error);
-    return res.status(500).json({ error: '서버 내부에서 오류가 발생했습니다.' });
+    return res.status(500).json({ error: `서버 오류 상세: ${error.message}` });
   }
 }
