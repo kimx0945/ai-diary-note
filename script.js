@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatInput = document.getElementById('chatInput');
     const chatSendBtn = document.getElementById('chatSendBtn');
 
+    // Profile Elements
+    const profileImg = document.getElementById('profileImg');
+    const profileInput = document.getElementById('profileInput');
+    const profileTrigger = document.getElementById('profileTrigger');
+    const changePhotoBtn = document.getElementById('changePhotoBtn');
+
     
     // Auth Logic
     let currentToken = null;
@@ -188,6 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initChat(session) {
         if (!session) return;
         
+        // 0. 프로필 사진 불러오기
+        loadProfileImage(session.user.id);
+
         // 1. 기존 메시지 불러오기 (최근 50개)
         const { data: messages, error } = await supabase
             .from('messages')
@@ -261,6 +270,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     chatSendBtn.addEventListener('click', sendChatMessage);
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendChatMessage();
+    });
+
+    // --- Profile Logic ---
+    function loadProfileImage(userId) {
+        const timestamp = new Date().getTime();
+        // 공개 버킷이므로 직접 URL 생성 가능 (캐시 방지를 위해 타임스탬프 추가)
+        const profileUrl = `${supabase.storage.from('avatars').getPublicUrl(`${userId}/profile.png`).data.publicUrl}?t=${timestamp}`;
+        
+        // 실제 이미지가 있는지 확인하기 위해 테스트 로드
+        const img = new Image();
+        img.onload = () => profileImg.src = profileUrl;
+        img.onerror = () => {
+            // 이미지가 없으면 기본 아바타 사용
+            profileImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
+        };
+        img.src = profileUrl;
+    }
+
+    profileTrigger.addEventListener('click', () => profileInput.click());
+    changePhotoBtn.addEventListener('click', () => profileInput.click());
+
+    profileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+        const filePath = `${userId}/profile.png`;
+
+        try {
+            profileImg.style.opacity = '0.5';
+            
+            // 이미지 업로드 (기존 파일이 있으면 덮어쓰기 위해 upsert: true)
+            const { error } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    upsert: true,
+                    contentType: 'image/png'
+                });
+
+            if (error) throw error;
+
+            // 업로드 성공 후 즉시 이미지 갱신
+            loadProfileImage(userId);
+            alert('프로필 사진이 변경되었습니다!');
+
+        } catch (error) {
+            console.error('Upload Error:', error);
+            alert('사진 업로드 실패: ' + error.message);
+        } finally {
+            profileImg.style.opacity = '1';
+        }
     });
 
     // Analyze Button Click

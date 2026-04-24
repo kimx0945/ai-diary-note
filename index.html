@@ -70,7 +70,19 @@
         </div>
 
         <div class="chat-section">
-            <h2><i data-lucide="message-circle"></i> 실시간 채팅</h2>
+            <div class="chat-header">
+                <h2><i data-lucide="message-circle"></i> 실시간 채팅</h2>
+                <div class="profile-area">
+                    <div class="profile-img-container" id="profileTrigger">
+                        <img id="profileImg" src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="프로필" />
+                        <div class="profile-overlay">
+                            <i data-lucide="camera"></i>
+                        </div>
+                    </div>
+                    <button id="changePhotoBtn" class="text-btn">사진 변경</button>
+                    <input type="file" id="profileInput" accept="image/*" style="display: none;" />
+                </div>
+            </div>
             <div id="chatMessages" class="chat-messages">
                 <p class="empty-msg">메시지를 불러오는 중...</p>
             </div>
