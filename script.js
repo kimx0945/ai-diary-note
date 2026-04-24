@@ -118,7 +118,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 히스토리 불러오기 및 렌더링
     async function loadHistory() {
         try {
-            const response = await fetch('/api/history');
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const response = await fetch('/api/history', {
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
             const data = await response.json();
 
             if (!response.ok || data.error) {
@@ -174,10 +181,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             // 서버리스 백엔드 API 호출
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
                 },
                 body: JSON.stringify({ diaryContent: content })
             });

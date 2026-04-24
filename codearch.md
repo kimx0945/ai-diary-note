@@ -43,22 +43,22 @@ DAY_5/
    - '분석 요청하기' 버튼을 누르면 `script.js`가 일기 내용을 가로챕니다.
 
 3. **백엔드 요청 (Frontend -> Backend)**
-   - `script.js`는 외부로 직접 통신하지 않고, 내부 백엔드 주소인 `/api/analyze`로 POST 요청을 보냅니다. (이때 일기 데이터를 JSON으로 담아 보냅니다.)
+   - `script.js`는 Supabase 세션에서 `access_token`을 가져와 `Authorization: Bearer <token>` 헤더에 담아 `/api/analyze`로 POST 요청을 보냅니다.
 
-4. **백엔드 처리 (Backend: `api/analyze.js`)**
-   - Vercel 서버리스 함수인 `analyze.js`가 요청을 받습니다.
+4. **백엔드 처리 및 보안 (Backend: `api/analyze.js`)**
+   - 서버리스 함수는 `SUPABASE_SERVICE_ROLE_KEY`를 사용하여 관리자 클라이언트를 생성합니다.
+   - 전달받은 토큰을 `supabase.auth.getUser(token)`로 검증하여 실제 사용자의 `userId`를 확보합니다. (위변조 방지)
    - 서버에 안전하게 숨겨져 있는 환경 변수 `process.env.GEMINI_API_KEY`를 꺼내옵니다.
    - 심리상담사 프롬프트 템플릿에 사용자의 일기 내용을 결합하여 실제 **Google Gemini API**로 POST 요청을 보냅니다.
 
-5. **결과 반환 및 저장 (Backend -> Frontend & Redis)**
+5. **결과 반환 및 사용자별 저장 (Backend -> Frontend & Redis)**
    - Gemini API로부터 받은 답변을 백엔드가 정제합니다.
-   - 백엔드는 응답을 프론트엔드로 보내기 직전, Vercel Serverless Redis에 `diary-YYYYMMDDHHMMSS` 키 형식으로 일기 내용과 AI 답변을 영구 저장합니다.
-   - 정제된 답변을 프론트엔드(`script.js`)로 전달합니다.
-   - `script.js`는 전달받은 답변을 화면(`aiResponse`)에 표시하고, 동시에 브라우저의 `localStorage`에도 임시 저장합니다.
+   - **사용자별 Redis 저장**: 백엔드는 응답을 프론트엔드로 보내기 직전, `user:[userId]:diary-YYYYMMDDHHMMSS` 키 형식으로 해당 사용자만의 일기 데이터를 영구 저장합니다.
+   - 정제된 답변을 프론트엔드로 전달합니다.
 
-6. **히스토리 조회 (Frontend: `script.js` <-> Backend: `api/history.js`)**
-   - 메인 화면 진입 시, 그리고 분석이 완료될 때마다 `script.js`가 `/api/history`를 호출합니다.
-   - 백엔드는 Redis에서 모든 `diary-*` 키를 찾아 데이터를 반환합니다.
+6. **개인 히스토리 조회 (Frontend: `script.js` <-> Backend: `api/history.js`)**
+   - 메인 화면 진입 시 `script.js`가 토큰을 담아 `/api/history`를 호출합니다.
+   - 백엔드는 토큰을 검증하여 해당 사용자의 `userId`를 확인한 뒤, Redis에서 `user:[userId]:diary-*` 패턴의 키들만 조회하여 반환합니다. (타인의 일기 조회 불가능)
    - 프론트엔드는 이를 카드 형태로 렌더링하여 하단 히스토리 섹션에 표시합니다.
 
 ---
