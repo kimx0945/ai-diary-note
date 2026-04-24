@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         signupBtn.disabled = false;
 
         if (error) showError(error.message);
-        else showError('회원가입 성공! (이메일 인증이 필요할 수 있습니다)', true);
+        else showError('가입 확인 이메일을 확인해주세요!', true);
     });
 
     googleLoginBtn.addEventListener('click', async () => {
