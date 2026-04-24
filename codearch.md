@@ -15,7 +15,8 @@ DAY_5/
 ├── codearch.md           # 현재 파일 (프로젝트 아키텍처 명세서)
 ├── index.html            # 웹앱의 뼈대가 되는 메인 HTML 구조
 ├── index.css             # 글래스모피즘 기반의 프리미엄 UI 스타일링
-├── script.js             # 프론트엔드 핵심 로직 (UI 인터랙션, 로컬 스토리지 관리, 백엔드 통신)
+├── script.js             # 프론트엔드 핵심 로직 (UI 인터랙션, 로컬 스토리지 관리, 백엔드 통신, Supabase 인증)
+├── vite.config.js        # Vite 번들러 환경 설정 (Vercel 환경 변수 클라이언트 노출)
 ├── package.json          # 프로젝트 의존성 및 스크립트 관리 (Vite 설정 등)
 ├── package-lock.json     # 패키지 버전 잠금 파일
 ├── node_modules/         # 설치된 패키지 폴더 (Git 제외)
@@ -30,30 +31,35 @@ DAY_5/
 
 ## 🔄 데이터 흐름 및 아키텍처 (Data Flow)
 
-현재 프로젝트는 **프론트엔드 - 서버리스 백엔드 - 외부 API(Gemini)** 의 3계층(3-Tier) 구조로 이루어져 있습니다.
+현재 프로젝트는 **프론트엔드 - 서버리스 백엔드 - 외부 API(Gemini & Supabase & Redis)** 구조로 이루어져 있습니다.
 
-1. **사용자 입력 (Frontend: `index.html`, `script.js`)**
-   - 사용자가 `textarea`에 일기를 작성하거나, Web Speech API를 통해 음성으로 입력합니다.
+1. **인증 및 인가 (Frontend & Supabase)**
+   - 앱 최초 진입 시 `script.js`가 Supabase 클라이언트(`lib/supabase.js`)를 통해 세션을 확인합니다.
+   - 세션이 없으면 로그인 폼을 렌더링하고, 로그인/회원가입/Google 소셜 로그인을 처리합니다.
+   - 세션이 존재하면(로그인 성공 시) 메인 일기장 컨테이너로 진입하며, 사용자 이메일을 상단에 표시합니다.
+
+2. **사용자 입력 (Frontend: `index.html`, `script.js`)**
+   - 로그인된 사용자가 `textarea`에 일기를 작성하거나, Web Speech API를 통해 음성으로 입력합니다.
    - '분석 요청하기' 버튼을 누르면 `script.js`가 일기 내용을 가로챕니다.
 
-2. **백엔드 요청 (Frontend -> Backend)**
+3. **백엔드 요청 (Frontend -> Backend)**
    - `script.js`는 외부로 직접 통신하지 않고, 내부 백엔드 주소인 `/api/analyze`로 POST 요청을 보냅니다. (이때 일기 데이터를 JSON으로 담아 보냅니다.)
 
-3. **백엔드 처리 (Backend: `api/analyze.js`)**
+4. **백엔드 처리 (Backend: `api/analyze.js`)**
    - Vercel 서버리스 함수인 `analyze.js`가 요청을 받습니다.
    - 서버에 안전하게 숨겨져 있는 환경 변수 `process.env.GEMINI_API_KEY`를 꺼내옵니다.
    - 심리상담사 프롬프트 템플릿에 사용자의 일기 내용을 결합하여 실제 **Google Gemini API**로 POST 요청을 보냅니다.
 
-4. **결과 반환 및 저장 (Backend -> Frontend & Redis)**
+5. **결과 반환 및 저장 (Backend -> Frontend & Redis)**
    - Gemini API로부터 받은 답변을 백엔드가 정제합니다.
-   - **(NEW) Redis 저장**: 백엔드는 응답을 프론트엔드로 보내기 직전, Vercel Serverless Redis에 `diary-YYYYMMDDHHMMSS` 키 형식으로 일기 내용과 AI 답변을 영구 저장합니다.
+   - 백엔드는 응답을 프론트엔드로 보내기 직전, Vercel Serverless Redis에 `diary-YYYYMMDDHHMMSS` 키 형식으로 일기 내용과 AI 답변을 영구 저장합니다.
    - 정제된 답변을 프론트엔드(`script.js`)로 전달합니다.
    - `script.js`는 전달받은 답변을 화면(`aiResponse`)에 표시하고, 동시에 브라우저의 `localStorage`에도 임시 저장합니다.
 
-5. **히스토리 조회 (Frontend: `script.js` <-> Backend: `api/history.js`)**
-   - 페이지가 로드되면 `script.js`가 `/api/history`를 호출합니다.
+6. **히스토리 조회 (Frontend: `script.js` <-> Backend: `api/history.js`)**
+   - 메인 화면 진입 시, 그리고 분석이 완료될 때마다 `script.js`가 `/api/history`를 호출합니다.
    - 백엔드는 Redis에서 모든 `diary-*` 키를 찾아 데이터를 반환합니다.
    - 프론트엔드는 이를 카드 형태로 렌더링하여 하단 히스토리 섹션에 표시합니다.
 
 ---
-*마지막 업데이트: 일기 히스토리 조회 기능(`api/history.js`) 및 UI 반영 완료*
+*마지막 업데이트: Supabase 로그인/회원가입 인증 도입 및 Vite 환경 설정 추가*
