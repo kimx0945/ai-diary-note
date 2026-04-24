@@ -19,13 +19,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const aiResponse = document.getElementById('aiResponse');
     
     // Auth Logic
+    let currentToken = null;
+
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) showApp(session);
-    else showLogin();
+    if (session) {
+        currentToken = session.access_token;
+        showApp(session);
+    } else {
+        showLogin();
+    }
 
     supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) showApp(session);
-        else showLogin();
+        if (session) {
+            currentToken = session.access_token;
+            showApp(session);
+        } else {
+            currentToken = null;
+            showLogin();
+        }
     });
 
     function showApp(currentSession) {
@@ -118,13 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 히스토리 불러오기 및 렌더링
     async function loadHistory() {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
+            const fetchHeaders = {};
+            if (currentToken) {
+                fetchHeaders['Authorization'] = `Bearer ${currentToken}`;
+            }
 
             const response = await fetch('/api/history', {
-                headers: {
-                    'Authorization': token ? `Bearer ${token}` : ''
-                }
+                headers: fetchHeaders
             });
             const data = await response.json();
 
@@ -159,9 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 초기 실행
-    loadHistory();
-
     // Analyze Button Click
     analyzeBtn.addEventListener('click', async () => {
         const content = diaryInput.value.trim();
@@ -181,15 +189,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             // 서버리스 백엔드 API 호출
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
+            const fetchHeaders = {
+                'Content-Type': 'application/json'
+            };
+            if (currentToken) {
+                fetchHeaders['Authorization'] = `Bearer ${currentToken}`;
+            }
 
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
-                },
+                headers: fetchHeaders,
                 body: JSON.stringify({ diaryContent: content })
             });
 

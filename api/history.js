@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || req.headers.Authorization;
 
     // 1. 사용자 인증 확인
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

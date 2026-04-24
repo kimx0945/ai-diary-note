@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   try {
     const { diaryContent } = req.body;
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || req.headers.Authorization;
 
     if (!diaryContent) {
       return res.status(400).json({ error: '일기 내용이 전달되지 않았습니다.' });
