@@ -231,9 +231,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         msgDiv.className = `message-item ${isOwn ? 'own' : 'others'}`;
         
         const userEmail = msg.user_email || '알 수 없는 사용자';
+        const avatarUrl = msg.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.user_id}`;
         
         msgDiv.innerHTML = `
-            <div class="message-user">${isOwn ? '나' : userEmail}</div>
+            <div class="message-info">
+                <img src="${avatarUrl}" class="chat-avatar" alt="avatar" />
+                <div class="message-user">${isOwn ? '나' : userEmail}</div>
+            </div>
             <div class="message-text">${msg.content}</div>
         `;
         
@@ -255,7 +259,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { 
                 content: content, 
                 user_id: user.id,
-                user_email: user.email
+                user_email: user.email,
+                avatar_url: user.user_metadata?.avatar_url || null
             }
         ]);
 
@@ -273,19 +278,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // --- Profile Logic ---
-    function loadProfileImage(userId) {
-        const timestamp = new Date().getTime();
-        // 공개 버킷이므로 직접 URL 생성 가능 (캐시 방지를 위해 타임스탬프 추가)
-        const profileUrl = `${supabase.storage.from('avatars').getPublicUrl(`${userId}/profile.png`).data.publicUrl}?t=${timestamp}`;
+    async function loadProfileImage(userId) {
+        const { data: { user } } = await supabase.auth.getUser();
         
-        // 실제 이미지가 있는지 확인하기 위해 테스트 로드
-        const img = new Image();
-        img.onload = () => profileImg.src = profileUrl;
-        img.onerror = () => {
-            // 이미지가 없으면 기본 아바타 사용
+        if (user?.user_metadata?.avatar_url) {
+            profileImg.src = user.user_metadata.avatar_url;
+        } else {
             profileImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
-        };
-        img.src = profileUrl;
+        }
     }
 
     profileTrigger.addEventListener('click', () => profileInput.click());
@@ -295,32 +295,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        const userId = session.user.id;
-        const filePath = `${userId}/profile.png`;
+        const userId = user.id;
+        const filePath = `${userId}/avatar.png`; // 요청에 따라 avatar.png로 변경
 
         try {
             profileImg.style.opacity = '0.5';
             
-            // 이미지 업로드 (기존 파일이 있으면 덮어쓰기 위해 upsert: true)
-            const { error } = await supabase.storage
+            // 1. 이미지 업로드
+            const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file, {
                     upsert: true,
                     contentType: 'image/png'
                 });
 
-            if (error) throw error;
+            if (uploadError) throw uploadError;
 
-            // 업로드 성공 후 즉시 이미지 갱신
-            loadProfileImage(userId);
+            // 2. 공개 URL 가져오기
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            const finalUrl = `${publicUrl}?t=${new Date().getTime()}`;
+
+            // 3. 사용자 메타데이터 업데이트
+            const { error: updateError } = await supabase.auth.updateUser({
+                data: { avatar_url: finalUrl }
+            });
+
+            if (updateError) throw updateError;
+
+            // 4. 화면 즉시 반영
+            profileImg.src = finalUrl;
             alert('프로필 사진이 변경되었습니다!');
 
         } catch (error) {
-            console.error('Upload Error:', error);
-            alert('사진 업로드 실패: ' + error.message);
+            console.error('Profile Update Error:', error);
+            alert('사진 업데이트 실패: ' + error.message);
         } finally {
             profileImg.style.opacity = '1';
         }

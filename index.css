@@ -500,18 +500,31 @@ button {
     border-bottom-left-radius: 4px;
 }
 
+.message-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.chat-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .message-user {
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
     opacity: 0.8;
 }
 
-.message-item.own .message-user {
-    text-align: right;
-    color: rgba(255, 255, 255, 0.7);
+.message-item.own .message-info {
+    flex-direction: row-reverse;
 }
 
 .chat-input-group {
