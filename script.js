@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const googleLoginBtn = document.getElementById('googleLoginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const authErrorMsg = document.getElementById('authErrorMsg');
+    const userEmailElement = document.getElementById('userEmail');
 
     const diaryInput = document.getElementById('diaryInput');
     const voiceBtn = document.getElementById('voiceBtn');
@@ -19,15 +20,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Auth Logic
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) showApp();
+    if (session) showApp(session);
     else showLogin();
 
     supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) showApp();
+        if (session) showApp(session);
         else showLogin();
     });
 
-    function showApp() {
+    function showApp(currentSession) {
+        if (currentSession && currentSession.user) {
+            userEmailElement.textContent = currentSession.user.email;
+        }
         loginContainer.style.display = 'none';
         appContainer.style.display = 'block';
         loadHistory();
