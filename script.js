@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const voiceBtn = document.getElementById('voiceBtn');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const aiResponse = document.getElementById('aiResponse');
+
+    // Chat Elements
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+
     
     // Auth Logic
     let currentToken = null;
@@ -46,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loginContainer.style.display = 'none';
         appContainer.style.display = 'block';
         loadHistory();
+        initChat(currentSession);
     }
 
     function showLogin() {
@@ -169,6 +176,87 @@ document.addEventListener('DOMContentLoaded', async () => {
             historyList.innerHTML = `<p class="empty-msg" style="color: #fca5a5;">기록을 가져오는데 실패했습니다: ${error.message}</p>`;
         }
     }
+
+    // --- Chat Logic ---
+    let chatChannel = null;
+
+    async function initChat(session) {
+        if (!session) return;
+        
+        // 1. 기존 메시지 불러오기 (최근 50개)
+        const { data: messages, error } = await supabase
+            .from('messages')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+        if (error) {
+            console.error('Chat load error:', error);
+            chatMessages.innerHTML = '<p class="empty-msg">메시지를 불러오지 못했습니다.</p>';
+        } else {
+            chatMessages.innerHTML = '';
+            messages.forEach(msg => appendMessage(msg, session.user.id));
+            scrollToBottom();
+        }
+
+        // 2. 실시간 구독 설정
+        if (chatChannel) supabase.removeChannel(chatChannel);
+
+        chatChannel = supabase
+            .channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                appendMessage(payload.new, session.user.id);
+                scrollToBottom();
+            })
+            .subscribe();
+    }
+
+    function appendMessage(msg, currentUserId) {
+        const isOwn = msg.user_id === currentUserId;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message-item ${isOwn ? 'own' : 'others'}`;
+        
+        const userEmail = msg.user_email || '알 수 없는 사용자';
+        
+        msgDiv.innerHTML = `
+            <div class="message-user">${isOwn ? '나' : userEmail}</div>
+            <div class="message-text">${msg.content}</div>
+        `;
+        
+        chatMessages.appendChild(msgDiv);
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+        const content = chatInput.value.trim();
+        if (!content) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase.from('messages').insert([
+            { 
+                content: content, 
+                user_id: user.id,
+                user_email: user.email
+            }
+        ]);
+
+        if (error) {
+            console.error('Send error:', error);
+            alert('메시지 전송 실패!');
+        } else {
+            chatInput.value = '';
+        }
+    }
+
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
 
     // Analyze Button Click
     analyzeBtn.addEventListener('click', async () => {
