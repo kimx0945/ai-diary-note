@@ -1,8 +1,100 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { supabase } from './lib/supabase.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Auth Elements
+    const loginContainer = document.getElementById('loginContainer');
+    const appContainer = document.getElementById('appContainer');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const authErrorMsg = document.getElementById('authErrorMsg');
+
     const diaryInput = document.getElementById('diaryInput');
     const voiceBtn = document.getElementById('voiceBtn');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const aiResponse = document.getElementById('aiResponse');
+    
+    // Auth Logic
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) showApp();
+    else showLogin();
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) showApp();
+        else showLogin();
+    });
+
+    function showApp() {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+        loadHistory();
+    }
+
+    function showLogin() {
+        loginContainer.style.display = 'block';
+        appContainer.style.display = 'none';
+    }
+
+    function showError(msg, isSuccess = false) {
+        authErrorMsg.textContent = msg;
+        authErrorMsg.style.display = 'block';
+        if (isSuccess) {
+            authErrorMsg.style.color = '#34d399';
+            authErrorMsg.style.backgroundColor = 'rgba(52, 211, 153, 0.1)';
+            authErrorMsg.style.borderColor = 'rgba(52, 211, 153, 0.2)';
+        } else {
+            authErrorMsg.style.color = '#fca5a5';
+            authErrorMsg.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            authErrorMsg.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+        }
+    }
+
+    loginBtn.addEventListener('click', async () => {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        if (!email || !password) return showError('이메일과 비밀번호를 입력해주세요.');
+
+        loginBtn.innerHTML = '처리 중...';
+        loginBtn.disabled = true;
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        loginBtn.innerHTML = '로그인';
+        loginBtn.disabled = false;
+
+        if (error) showError(error.message);
+    });
+
+    signupBtn.addEventListener('click', async () => {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        if (!email || !password) return showError('이메일과 비밀번호를 입력해주세요.');
+
+        signupBtn.innerHTML = '처리 중...';
+        signupBtn.disabled = true;
+
+        const { error } = await supabase.auth.signUp({ email, password });
+        
+        signupBtn.innerHTML = '회원가입';
+        signupBtn.disabled = false;
+
+        if (error) showError(error.message);
+        else showError('회원가입 성공! (이메일 인증이 필요할 수 있습니다)', true);
+    });
+
+    googleLoginBtn.addEventListener('click', async () => {
+        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+        if (error) showError(error.message);
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+    });
+
+
     // 저장된 데이터 불러오기
     const savedDiary = localStorage.getItem('savedDiary');
     const savedAiResponse = localStorage.getItem('savedAiResponse');
