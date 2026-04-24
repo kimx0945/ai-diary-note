@@ -13,9 +13,9 @@ DAY_5/
 ├── .gitignore            # Git 버전 관리에서 제외할 파일 목록
 ├── changelog.md          # 프로젝트 변경 이력 기록 파일
 ├── codearch.md           # 현재 파일 (프로젝트 아키텍처 명세서)
-├── index.html            # 웹앱의 뼈대가 되는 메인 HTML 구조
+├── index.html            # 웹앱의 뼈대가 되는 메인 HTML (일기 + 실시간 채팅 UI)
 ├── index.css             # 글래스모피즘 기반의 프리미엄 UI 스타일링
-├── script.js             # 프론트엔드 핵심 로직 (UI 인터랙션, 로컬 스토리지 관리, 백엔드 통신, Supabase 인증)
+├── script.js             # 프론트엔드 핵심 로직 (UI 인터랙션, Supabase 인증, 실시간 채팅)
 ├── vite.config.js        # Vite 번들러 환경 설정 (Vercel 환경 변수 클라이언트 노출)
 ├── package.json          # 프로젝트 의존성 및 스크립트 관리 (Vite 설정 등)
 ├── package-lock.json     # 패키지 버전 잠금 파일
@@ -36,7 +36,12 @@ DAY_5/
 1. **인증 및 인가 (Frontend & Supabase)**
    - 앱 최초 진입 시 `script.js`가 Supabase 클라이언트(`lib/supabase.js`)를 통해 세션을 확인합니다.
    - 세션이 없으면 로그인 폼을 렌더링하고, 로그인/회원가입/Google 소셜 로그인을 처리합니다.
-   - 세션이 존재하면(로그인 성공 시) 메인 일기장 컨테이너로 진입하며, 사용자 이메일을 상단에 표시합니다.
+   - 세션이 존재하면(로그인 성공 시) 메인 일기장 및 실시간 채팅 컨테이너로 진입하며, 사용자 이메일을 상단에 표시합니다.
+
+2. **실시간 채팅 (Frontend & Supabase Realtime)**
+   - 사용자가 채팅 입력 시 Supabase `messages` 테이블에 데이터가 삽입됩니다(`insert`).
+   - Supabase Realtime 채널(`postgres_changes`)을 통해 모든 접속자에게 즉시 메시지가 전파되어 UI가 실시간으로 업데이트됩니다.
+
 
 2. **사용자 입력 (Frontend: `index.html`, `script.js`)**
    - 로그인된 사용자가 `textarea`에 일기를 작성하거나, Web Speech API를 통해 음성으로 입력합니다.
