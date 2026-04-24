@@ -151,9 +151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             historyList.innerHTML = history.map(item => {
-                // ID에서 날짜 추출 (diary-YYYYMMDDHHMMSS)
-                const ts = item.id.replace('diary-', '');
-                const formattedDate = `${ts.slice(0, 4)}년 ${ts.slice(4, 6)}월 ${ts.slice(6, 8)}일 ${ts.slice(8, 10)}: ${ts.slice(10, 12)}`;
+                // ID에서 날짜 추출 (기존: diary-YYYYMMDDHHMMSS, 변경: user:[userId]:diary-YYYYMMDDHHMMSS)
+                const ts = item.id.split('diary-')[1];
+                const formattedDate = ts ? `${ts.slice(0, 4)}년 ${ts.slice(4, 6)}월 ${ts.slice(6, 8)}일 ${ts.slice(8, 10)}: ${ts.slice(10, 12)}` : '날짜 정보 없음';
 
                 return `
                     <div class="history-card">
