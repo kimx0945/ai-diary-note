@@ -19,8 +19,11 @@ DAY_5/
 ├── package.json          # 프로젝트 의존성 및 스크립트 관리 (Vite 설정 등)
 ├── package-lock.json     # 패키지 버전 잠금 파일
 ├── node_modules/         # 설치된 패키지 폴더 (Git 제외)
-└── api/                  # 백엔드 서버리스 함수 폴더 (Vercel 환경 지원)
-    └── analyze.js        # Gemini API와 직접 통신하여 일기를 분석하는 백엔드 코어 로직
+├── api/                  # 백엔드 서버리스 함수 폴더 (Vercel 환경 지원)
+│   ├── analyze.js        # Gemini API와 통신하여 일기를 분석하고 Redis에 저장
+│   └── history.js        # Redis에 저장된 전체 일기 기록을 가져와 최신순으로 반환
+├── lib/                  # 공통 유틸리티 및 라이브러리 설정 폴더
+│   └── supabase.js       # Supabase 클라이언트 초기화 및 설정 파일
 ```
 
 ---
